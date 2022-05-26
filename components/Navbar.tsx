@@ -58,7 +58,7 @@ const Navbar = () => {
         <SpeakerphoneIcon className="navbar__icon" />
       </div>
       <div className="ml-5 flex items-center lg:hidden">
-        <MenuIcon className="navbar__icon" />
+        <MenuIcon onClick={() => session ? signOut() : signIn()} className="navbar__icon" />
       </div>
       {/* auth button */}
       {session ? (
