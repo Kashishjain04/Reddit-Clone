@@ -1,0 +1,4 @@
+configurationset:
+  - configuration:
+      name: postgresql_config
+      uri: postgresql://postgres:reddit-clone-supabase@db.uohgdyrrvfqoppbnaihv.supabase.co/postgres
