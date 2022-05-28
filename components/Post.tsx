@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
 import { useMutation, useQuery } from '@apollo/client'
-import { ADD_VOTE } from '../graphql/mutations'
+import { ADD_VOTE, DELETE_VOTE } from '../graphql/mutations'
 import { GET_ALL_VOTES_BY_POST_ID } from '../graphql/queries'
 
 type Props = {
@@ -21,7 +21,7 @@ type Props = {
 }
 
 const Post = ({ post }: Props) => {
-  const [vote, setVote] = useState<boolean>();
+  const [vote, setVote] = useState<Vote>();
   const {data, loading} = useQuery(GET_ALL_VOTES_BY_POST_ID, {
     variables: {
       post_id: post?.id
@@ -30,14 +30,26 @@ const Post = ({ post }: Props) => {
   const [addVote] = useMutation(ADD_VOTE, {
     refetchQueries: [GET_ALL_VOTES_BY_POST_ID, 'getVotesByPostId']
   })
+  const [deleteVote] = useMutation(DELETE_VOTE);
   const {data: session} = useSession();
+
   const upVote = async (isUpvote: boolean) => {
     if(!session){
       toast("You'll need to signin to Vote !!")
       return
     }
-    if(vote === true && isUpvote) return;
-    if(vote === false && !isUpvote) return;
+    if(vote?.upvote === true && isUpvote) return;
+    if(vote?.upvote === false && !isUpvote) return;
+    if(vote?.upvote === true && !isUpvote){
+      await deleteVote({
+        variables: {id: vote?.id}
+      })
+    }
+    if(vote?.upvote === false && isUpvote){
+      await deleteVote({
+        variables: {id: vote?.id}
+      })
+    }
     await addVote({
       variables:{
         post_id: post?.id,
@@ -55,7 +67,7 @@ const Post = ({ post }: Props) => {
 
   useEffect(() => {
     const votes: Vote[] = data?.getVotesByPostId;
-    const vote = votes?.find((vote) => vote.username === session?.user?.name)?.upvote
+    const vote = votes?.find((vote) => vote.username === session?.user?.name);
     setVote(vote);
   }, [data])
 
@@ -63,9 +75,9 @@ const Post = ({ post }: Props) => {
     <Link href={`/post/${post?.id}`}>
     <div className="flex cursor-pointer rounded-md border border-gray-300 bg-white shadow-sm hover:border-gray-600">
       <div className="flex flex-col items-center justify-start space-y-1 rounded-l-md bg-gray-50 p-4 text-gray-400">
-        <ArrowUpIcon onClick={() => upVote(true)} className={`voteButtons hover:text-green-400 ${vote===true && "text-green-400"}`} />
+        <ArrowUpIcon onClick={() => upVote(true)} className={`voteButtons hover:text-green-400 ${vote?.upvote===true && "text-green-400"}`} />
         <p className="text-xs font-bold text-black">{voteCount(data)}</p>
-        <ArrowDownIcon onClick={() => upVote(false)} className={`voteButtons hover:text-red-400 ${vote===false && "text-red-400"}`} />
+        <ArrowDownIcon onClick={() => upVote(false)} className={`voteButtons hover:text-red-400 ${vote?.upvote===false && "text-red-400"}`} />
       </div>
       <div className="p-3 pb-1">
         {/* header */}
@@ -88,7 +100,7 @@ const Post = ({ post }: Props) => {
         </div>
         {/* image */}
         {post?.image && (
-          <img className="w-full" src={post?.image} alt="post_image" />
+          <img className="w-full rounded-sm" src={post?.image} alt="post_image" />
         )}
         {/* footer */}
         <div className="flex space-x-4 text-gray-400">
